@@ -206,8 +206,13 @@ class APIRouter:
 
         # NewsAPI의 경우 서버 측 API 키 자동 추가
         from core.config import settings
-        if api_def.service_name == "news" and settings.NEWSAPI_KEY:
-            params["apiKey"] = settings.NEWSAPI_KEY
+        if api_def.service_name == "news":
+            logger.info(f"NEWSAPI_KEY loaded: {bool(settings.NEWSAPI_KEY)}, length: {len(settings.NEWSAPI_KEY)}")
+            if settings.NEWSAPI_KEY:
+                params["apiKey"] = settings.NEWSAPI_KEY
+                logger.info("API key added to params")
+            else:
+                logger.warning("NEWSAPI_KEY is empty!")
 
         # 세션 확인
         if not self.session or self.session.closed:

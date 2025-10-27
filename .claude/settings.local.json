@@ -2,7 +2,31 @@
   "permissions": {
     "allow": [
       "Bash(npx -y @modelcontextprotocol/inspector)",
-      "WebFetch(domain:www.notion.so)"
+      "WebFetch(domain:www.notion.so)",
+      "Bash(poetry --version:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(venvScriptspython.exe -m pip install -r requirements.txt)",
+      "Bash(./venv/Scripts/python.exe -m pip:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(..venvScriptspython.exe -m uvicorn:*)",
+      "Bash(\"C:\\workspace\\sesac\\000.project\\Universal-API-Gateway-MCP-Server\\backend\\venv\\Scripts\\python.exe\" -m uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: FastAPI 백엔드 및 MCP 서버 구현 완료\n\n백엔드 핵심 기능 구현:\n- FastAPI REST API 서버 구현\n- MCP (Model Context Protocol) 서버 구현\n- 3개 Public API 지원 (Steam, Weather, News)\n- 총 5개 외부 API 엔드포인트 통합\n\n주요 구현 사항:\n- API 라우팅 및 프록시 시스템\n- 보안 기능 (URL 화이트리스트, 내부 IP 차단)\n- 파라미터 검증 및 에러 핸들링\n- JSONPath 기반 응답 매핑\n- 비동기 HTTP 클라이언트 (aiohttp)\n\n기술 스택:\n- FastAPI 0.115.0\n- Python 3.12\n- Pydantic 2.9.0\n- aiohttp 3.10.0\n- MCP SDK 1.1.2\n\n테스트 완료:\n- Weather API 실시간 데이터 조회 성공\n- 모든 REST API 엔드포인트 정상 작동 확인\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: React 프론트엔드 프로젝트 초기 설정\n\n- Vite를 사용한 React + TypeScript 프로젝트 생성\n- 기본 의존성 설치 완료\n- 프론트엔드 구현 계획서 작성\n\n다음 단계:\n- React Query, React Router, Tailwind CSS 설치\n- API 클라이언트 및 컴포넌트 구현\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(git commit:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(copy .env.example .env)",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 36752,17012,27744 -Force\")"
     ],
     "deny": [],
     "ask": []

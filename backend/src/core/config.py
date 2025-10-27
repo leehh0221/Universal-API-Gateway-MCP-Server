@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     NEWSAPI_KEY: str = ""  # NewsAPI.org API Key
 
     model_config = SettingsConfigDict(
-        env_file="../.env",  # backend/.env 파일 경로
+        env_file=Path(__file__).parent.parent.parent / ".env",  # 절대 경로 사용
         env_file_encoding="utf-8",
         case_sensitive=True
     )
