@@ -84,8 +84,7 @@ backend-mcp-sse/
 mcp==1.1.2                    # MCP SDK
 
 # 웹 프레임워크
-fastapi==0.115.0              # FastAPI (REST API + MCP SSE 호스팅)
-starlette==0.41.3             # ASGI 프레임워크 (FastAPI 내장)
+fastapi==0.115.0              # FastAPI (REST API + MCP SSE 호스팅, Starlette 포함)
 uvicorn[standard]==0.32.1     # ASGI 서버
 
 # HTTP 클라이언트
@@ -101,6 +100,8 @@ jsonpath-ng==1.6.1            # JSONPath 쿼리
 # 유틸리티
 python-dotenv==1.0.1          # 환경 변수 관리
 ```
+
+**Note**: Starlette는 FastAPI에 포함되어 있으므로 별도로 명시하지 않습니다.
 
 ### 포함되는 기능
 - ✅ **FastAPI REST API** (프론트엔드 대시보드용)
@@ -173,43 +174,52 @@ def create_mcp_sse_app(api_router: APIRouter) -> Starlette:
 
 ### 4.2 메인 애플리케이션 (main.py)
 
-**기존 backend/src/main.py를 기반으로 작성 (FastAPI 유지)**
+**기존 backend/src/main.py를 거의 그대로 사용, MCP SSE 앱만 변경**
 
 ```python
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import settings
+from core.config import settings
 from core.api_router import APIRouter
 from api.dependencies import set_api_router
 from api.router import api_router
 from mcp.server import create_mcp_sse_app
+from utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """애플리케이션 생명주기 관리"""
-    # 시작 시: API 정의 로드 및 세션 생성
+    logger.info("Starting Universal API Gateway (HTTP/SSE)...")
+
+    # API Router 인스턴스 생성 및 초기화
     api_router_instance = APIRouter(data_dir=settings.DATA_DIR)
     await api_router_instance.load_api_definitions()
     await api_router_instance.create_session()
+
+    # 전역 인스턴스 설정
     set_api_router(api_router_instance)
 
-    # MCP SSE 앱 생성 및 마운트
-    mcp_sse_app = create_mcp_sse_app(api_router_instance)
-    app.mount("/mcp", mcp_sse_app)
+    logger.info(f"Loaded {len(api_router_instance.apis)} APIs")
+    logger.info(f"Server ready on {settings.HOST}:{settings.PORT}")
+    logger.info(f"MCP SSE endpoint: http://{settings.HOST}:{settings.PORT}/mcp/sse")
 
     yield
 
-    # 종료 시: 세션 종료
+    # 종료 시
+    logger.info("Shutting down...")
     await api_router_instance.close_session()
 
 # FastAPI 앱 생성
 app = FastAPI(
-    title="Universal API Gateway",
+    title=settings.APP_NAME,
     description="HTTP/SSE MCP Server + REST API",
-    version="2.0.0",
-    lifespan=lifespan
+    version=settings.VERSION,
+    lifespan=lifespan,
+    debug=settings.DEBUG
 )
 
 # CORS 설정 (프론트엔드 연동)
@@ -225,19 +235,32 @@ app.add_middleware(
 # REST API 라우터 등록 (프론트엔드용)
 app.include_router(api_router, prefix="/api/v1")
 
+# MCP SSE 앱 마운트 (lifespan 밖에서 - 동적 생성)
+# Note: create_mcp_sse_app은 요청 시점에 api_router_instance를 가져옴
+from mcp.server import mcp_sse_app
+app.mount("/mcp", mcp_sse_app)
+
 @app.get("/")
 async def root():
     return {
-        "message": "Universal API Gateway (HTTP/SSE)",
-        "version": "2.0.0",
+        "message": settings.APP_NAME,
+        "version": settings.VERSION,
         "docs": "/docs",
+        "health": "/api/v1/health",
         "mcp_sse": "/mcp/sse"
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG
+    )
 ```
+
+**주의**: `mcp/server.py`에서 MCP SSE 앱을 생성할 때, `get_api_router()` 의존성을 통해 API Router 인스턴스를 가져와야 합니다.
 
 ### 4.3 복사할 파일 목록
 
@@ -278,31 +301,34 @@ if __name__ == "__main__":
 # 서버 설정
 HOST=0.0.0.0
 PORT=8080
+DEBUG=true
 LOG_LEVEL=info
 
 # API 키 (필요시)
 NEWSAPI_KEY=your_api_key_here
 
-# 데이터 디렉토리
-API_DATA_DIR=../backend/data/apis
+# 데이터 디렉토리 (복사한 경우)
+DATA_DIR=./data/apis
+
+# 또는 절대 경로 사용
+# DATA_DIR=C:/workspace/sesac/000.project/Universal-API-Gateway-MCP-Server/backend-mcp-sse/data/apis
+
+# CORS 설정
+CORS_ORIGINS=["http://localhost:5173"]
 ```
 
-### config.py (pydantic-settings 사용)
+### core/config.py 수정
+**기존 `backend/src/core/config.py`를 복사한 후, 다음 부분만 수정:**
+
 ```python
-from pydantic_settings import BaseSettings
+# 수정 전 (기존)
+PORT: int = 8000
 
-class Settings(BaseSettings):
-    HOST: str = "0.0.0.0"
-    PORT: int = 8080
-    LOG_LEVEL: str = "info"
-    NEWSAPI_KEY: str = ""
-    API_DATA_DIR: str = "../backend/data/apis"
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
+# 수정 후
+PORT: int = 8080
 ```
+
+전체 파일은 기존과 동일하게 유지합니다.
 
 ## 6. Claude Desktop 연결 설정
 
@@ -311,7 +337,7 @@ settings = Settings()
 {
   "mcpServers": {
     "universal-api-gateway-sse": {
-      "url": "http://localhost:8080/sse"
+      "url": "http://localhost:8080/mcp/sse"
     }
   }
 }
@@ -322,7 +348,7 @@ settings = Settings()
 {
   "mcpServers": {
     "universal-api-gateway-sse": {
-      "url": "https://your-domain.com/sse"
+      "url": "https://your-domain.com/mcp/sse"
     }
   }
 }
@@ -359,13 +385,13 @@ uvicorn src.main:app --host 0.0.0.0 --port 8080 --workers 4
 
 ### MCP Inspector로 테스트
 ```bash
-npx -y @modelcontextprotocol/inspector http://localhost:8080/sse
+npx -y @modelcontextprotocol/inspector http://localhost:8080/mcp/sse
 ```
 
 ### curl로 SSE 연결 테스트
 ```bash
 # SSE 엔드포인트 확인
-curl -N http://localhost:8080/sse
+curl -N http://localhost:8080/mcp/sse
 
 # 응답: text/event-stream
 ```
@@ -374,9 +400,11 @@ curl -N http://localhost:8080/sse
 
 ### Phase 1: 프로젝트 기본 구조 생성
 - [ ] `backend-mcp-sse/` 디렉토리 생성
-- [ ] 하위 디렉토리 생성 (`src/`, `src/mcp/`, `src/api/`, `src/core/`, 등)
+- [ ] 하위 디렉토리 생성 (`src/`, `src/mcp/`, `src/api/`, `src/core/`, `data/`, 등)
 - [ ] `requirements.txt` 작성
 - [ ] `.env.example` 작성
+- [ ] Python 가상환경 생성 (`python -m venv venv`)
+- [ ] 가상환경 활성화 및 의존성 설치 (`pip install -r requirements.txt`)
 
 ### Phase 2: 기존 코드 복사
 - [ ] `backend/src/core/` → `backend-mcp-sse/src/core/` 복사
@@ -430,9 +458,9 @@ curl -N http://localhost:8080/sse
 5. `backend/src/utils/logger.py` → 로깅 설정 참고 (stdout 사용 가능)
 
 ### 제외할 부분
-- FastAPI 관련 코드 전체
-- REST API 엔드포인트 (`api/endpoints/`)
-- stdio 관련 코드 (`mcp_server/server.py`의 stdio 부분)
+- **stdio 관련 코드만 제외:**
+  - `backend/src/mcp_server/server.py`의 `run_stdio()` 메서드
+  - `backend/src/mcp_server/__main__.py` 전체 파일
 
 ## 11. 장점 및 기대 효과
 
