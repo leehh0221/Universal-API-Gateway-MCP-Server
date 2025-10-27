@@ -122,3 +122,6 @@ pnpm-lock.yaml
 # Skip auto-generated docs if needed
 # docs/_build/
 # site/
+
+# Claude
+.claude/
