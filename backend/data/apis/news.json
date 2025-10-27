@@ -1,0 +1,100 @@
+{
+  "service_name": "news",
+  "display_name": "NewsAPI.org",
+  "base_url": "https://newsapi.org",
+  "description": "전 세계 뉴스 기사를 검색하고 조회합니다 (무료 티어는 API 키 불필요한 일부 엔드포인트 사용)",
+  "auth_required": false,
+  "endpoints": [
+    {
+      "id": "get_top_headlines",
+      "name": "news_get_top_headlines",
+      "display_name": "Get Top Headlines",
+      "description": "최신 헤드라인 뉴스를 조회합니다. 국가 코드로 필터링 가능합니다.",
+      "http_method": "GET",
+      "path": "/v2/top-headlines",
+      "parameters": {
+        "country": {
+          "type": "string",
+          "description": "2글자 ISO 3166-1 국가 코드 (us, kr, jp, gb 등)",
+          "required": false,
+          "default": "us",
+          "enum": ["us", "kr", "jp", "gb", "de", "fr", "cn", "in"]
+        },
+        "category": {
+          "type": "string",
+          "description": "뉴스 카테고리",
+          "required": false,
+          "enum": ["business", "entertainment", "general", "health", "science", "sports", "technology"]
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "반환할 기사 개수 (1-100)",
+          "required": false,
+          "default": 10,
+          "min": 1,
+          "max": 100
+        },
+        "page": {
+          "type": "integer",
+          "description": "페이지 번호",
+          "required": false,
+          "default": 1,
+          "min": 1
+        }
+      },
+      "response_mapping": {
+        "path": "$.articles",
+        "format": "json"
+      },
+      "timeout_seconds": 10
+    },
+    {
+      "id": "search_everything",
+      "name": "news_search_everything",
+      "display_name": "Search Everything",
+      "description": "키워드로 모든 뉴스 기사를 검색합니다",
+      "http_method": "GET",
+      "path": "/v2/everything",
+      "parameters": {
+        "q": {
+          "type": "string",
+          "description": "검색 키워드 또는 구문",
+          "required": true
+        },
+        "searchIn": {
+          "type": "string",
+          "description": "검색 대상 (title, description, content)",
+          "required": false,
+          "default": "title,description"
+        },
+        "language": {
+          "type": "string",
+          "description": "2글자 ISO-639-1 언어 코드",
+          "required": false,
+          "default": "en",
+          "enum": ["ar", "de", "en", "es", "fr", "he", "it", "nl", "no", "pt", "ru", "sv", "ud", "zh"]
+        },
+        "sortBy": {
+          "type": "string",
+          "description": "정렬 기준",
+          "required": false,
+          "default": "publishedAt",
+          "enum": ["relevancy", "popularity", "publishedAt"]
+        },
+        "pageSize": {
+          "type": "integer",
+          "description": "반환할 기사 개수",
+          "required": false,
+          "default": 10,
+          "min": 1,
+          "max": 100
+        }
+      },
+      "response_mapping": {
+        "path": "$.articles",
+        "format": "json"
+      },
+      "timeout_seconds": 10
+    }
+  ]
+}
