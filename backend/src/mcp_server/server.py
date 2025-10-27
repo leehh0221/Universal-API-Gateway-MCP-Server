@@ -58,13 +58,13 @@ class UniversalMCPServer:
         logger.info("Cleaning up...")
         await self.api_router.close_session()
 
-    async def run(self):
-        """서버 실행"""
+    async def run_stdio(self):
+        """stdio 방식으로 서버 실행 (로컬 전용, 레거시)"""
         try:
             async with stdio_server() as (read_stream, write_stream):
                 await self.initialize()
 
-                logger.info("MCP server running...")
+                logger.info("MCP server running (stdio mode)...")
 
                 await self.server.run(
                     read_stream,
@@ -80,11 +80,11 @@ class UniversalMCPServer:
 
 
 def main():
-    """메인 함수"""
+    """메인 함수 (stdio 모드 - 레거시 지원)"""
     server = UniversalMCPServer()
 
     try:
-        asyncio.run(server.run())
+        asyncio.run(server.run_stdio())
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception as e:

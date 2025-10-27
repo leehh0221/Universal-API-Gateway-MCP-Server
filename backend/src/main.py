@@ -10,6 +10,7 @@ from api.dependencies import set_api_router
 from api.router import api_router
 from core.api_router import APIRouter
 from core.config import settings
+from mcp_server.sse_transport import mcp_sse_app
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -32,6 +33,7 @@ async def lifespan(app: FastAPI):
 
     logger.info(f"Loaded {len(api_router_instance.apis)} APIs")
     logger.info(f"Server ready on {settings.HOST}:{settings.PORT}")
+    logger.info(f"MCP SSE endpoint: http://{settings.HOST}:{settings.PORT}/mcp/sse")
 
     yield
 
@@ -62,6 +64,9 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(api_router, prefix="/api/v1")
 
+# MCP SSE 앱 마운트
+app.mount("/mcp", mcp_sse_app)
+
 
 @app.get("/")
 async def root():
@@ -70,7 +75,8 @@ async def root():
         "message": settings.APP_NAME,
         "version": settings.VERSION,
         "docs": "/docs",
-        "health": "/api/v1/health"
+        "health": "/api/v1/health",
+        "mcp_sse": "/mcp/sse"
     }
 
 
