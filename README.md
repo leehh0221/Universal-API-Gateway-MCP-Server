@@ -41,9 +41,24 @@ Universal-API-Gateway-MCP-Server/
 #### NewsAPI 사용 방법:
 1. https://newsapi.org/register 에서 무료 계정 등록
 2. 이메일로 받은 API 키 복사
-3. 프론트엔드 대시보드에서 API 테스트 시 `apiKey` 파라미터에 입력
+3. `backend/.env` 파일 생성 및 API 키 설정 (아래 참고)
 
 ## 빠른 시작
+
+### 환경 변수 설정
+
+NewsAPI를 사용하려면 API 키가 필요합니다:
+
+```bash
+# 1. backend 디렉토리로 이동
+cd backend
+
+# 2. .env.example 파일을 복사하여 .env 파일 생성
+cp .env.example .env
+
+# 3. .env 파일을 열어 NewsAPI 키 입력
+# NEWSAPI_KEY=your_actual_api_key_here
+```
 
 ### 백엔드 실행
 
@@ -85,9 +100,11 @@ npm run dev
 2. "APIs" 메뉴 클릭
 3. 테스트하고 싶은 API 선택
 4. 엔드포인트 선택
-5. 필요한 파라미터 입력 (NewsAPI의 경우 apiKey 필수)
+5. 필요한 파라미터 입력
 6. "Test API" 버튼 클릭
 7. 응답 결과 확인
+
+**주의**: NewsAPI의 경우 `.env` 파일에 API 키를 미리 설정해야 합니다.
 
 ## MCP 서버로 사용
 

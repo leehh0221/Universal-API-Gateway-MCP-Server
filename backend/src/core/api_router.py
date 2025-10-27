@@ -204,6 +204,11 @@ class APIRouter:
                 else:
                     params[param_name] = value
 
+        # NewsAPI의 경우 서버 측 API 키 자동 추가
+        from core.config import settings
+        if api_def.service_name == "news" and settings.NEWSAPI_KEY:
+            params["apiKey"] = settings.NEWSAPI_KEY
+
         # 세션 확인
         if not self.session or self.session.closed:
             await self.create_session()

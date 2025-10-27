@@ -59,8 +59,11 @@ class Settings(BaseSettings):
     # 로깅
     LOG_LEVEL: str = "INFO"
 
+    # API Keys
+    NEWSAPI_KEY: str = ""  # NewsAPI.org API Key
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file="../.env",  # backend/.env 파일 경로
         env_file_encoding="utf-8",
         case_sensitive=True
     )

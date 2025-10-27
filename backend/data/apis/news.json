@@ -13,11 +13,6 @@
       "http_method": "GET",
       "path": "/v2/top-headlines",
       "parameters": {
-        "apiKey": {
-          "type": "string",
-          "description": "NewsAPI API 키 (https://newsapi.org/register 에서 무료 발급)",
-          "required": true
-        },
         "country": {
           "type": "string",
           "description": "2글자 ISO 3166-1 국가 코드 (us, kr, jp, gb 등)",
@@ -61,11 +56,6 @@
       "http_method": "GET",
       "path": "/v2/everything",
       "parameters": {
-        "apiKey": {
-          "type": "string",
-          "description": "NewsAPI API 키 (https://newsapi.org/register 에서 무료 발급)",
-          "required": true
-        },
         "q": {
           "type": "string",
           "description": "검색 키워드 또는 구문",
