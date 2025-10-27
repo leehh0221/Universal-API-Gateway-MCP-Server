@@ -2,8 +2,8 @@
   "service_name": "news",
   "display_name": "NewsAPI.org",
   "base_url": "https://newsapi.org",
-  "description": "전 세계 뉴스 기사를 검색하고 조회합니다 (무료 티어는 API 키 불필요한 일부 엔드포인트 사용)",
-  "auth_required": false,
+  "description": "전 세계 뉴스 기사를 검색하고 조회합니다 (API 키 필요: https://newsapi.org/register 에서 무료 가입)",
+  "auth_required": true,
   "endpoints": [
     {
       "id": "get_top_headlines",
@@ -13,6 +13,11 @@
       "http_method": "GET",
       "path": "/v2/top-headlines",
       "parameters": {
+        "apiKey": {
+          "type": "string",
+          "description": "NewsAPI API 키 (https://newsapi.org/register 에서 무료 발급)",
+          "required": true
+        },
         "country": {
           "type": "string",
           "description": "2글자 ISO 3166-1 국가 코드 (us, kr, jp, gb 등)",
@@ -56,6 +61,11 @@
       "http_method": "GET",
       "path": "/v2/everything",
       "parameters": {
+        "apiKey": {
+          "type": "string",
+          "description": "NewsAPI API 키 (https://newsapi.org/register 에서 무료 발급)",
+          "required": true
+        },
         "q": {
           "type": "string",
           "description": "검색 키워드 또는 구문",
