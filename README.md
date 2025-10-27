@@ -108,7 +108,9 @@ npm run dev
 
 ## MCP 서버로 사용
 
-Claude Desktop에서 MCP 서버로 사용하려면:
+### 로컬 환경 (stdio 방식 - 레거시)
+
+로컬에서 stdio 방식으로 사용하려면 (권장하지 않음):
 
 ```json
 {
@@ -118,6 +120,39 @@ Claude Desktop에서 MCP 서버로 사용하려면:
       "args": [
         "C:\\path\\to\\backend\\src\\mcp_server\\server.py"
       ]
+    }
+  }
+}
+```
+
+### 로컬/원격 환경 (HTTP/SSE 방식 - 권장)
+
+먼저 백엔드 서버를 실행한 후:
+
+```bash
+cd backend/src
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+Claude Desktop 설정 (`%APPDATA%\Claude\claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "universal-api-gateway": {
+      "url": "http://localhost:8000/mcp/sse"
+    }
+  }
+}
+```
+
+**원격 서버 배포 시**:
+
+```json
+{
+  "mcpServers": {
+    "universal-api-gateway": {
+      "url": "https://your-domain.com/mcp/sse"
     }
   }
 }
@@ -146,6 +181,8 @@ Claude Desktop에서 MCP 서버로 사용하려면:
 - ✅ 3개 Public API 통합 (Steam, Weather, News)
 - ✅ RESTful API 엔드포인트
 - ✅ MCP (Model Context Protocol) 서버
+  - ✅ HTTP/SSE 전송 방식 (로컬 및 원격 지원)
+  - ✅ stdio 전송 방식 (레거시, 로컬 전용)
 - ✅ React 대시보드 UI
 - ✅ 실시간 API 테스트 기능
 - ✅ CORS 설정 (모든 localhost 포트 허용)
