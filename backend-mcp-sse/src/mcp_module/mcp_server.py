@@ -4,7 +4,7 @@ HTTP/SSE MCP Server Implementation
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from starlette.applications import Starlette
-from starlette.routing import Route, Mount
+from starlette.routing import Route
 
 from .handlers import MCPHandlers
 from core.api_router import APIRouter
@@ -30,9 +30,11 @@ class UniversalMCPServer:
             return await self.handlers.handle_call_tool(name, arguments)
 
 
-def create_mcp_sse_app(api_router: APIRouter) -> Starlette:
-    """Create MCP SSE application"""
-    sse_transport = SseServerTransport("/messages/")
+def create_mcp_sse_app(api_router: APIRouter):
+    """Create MCP SSE application as Starlette app"""
+    # Create transport with message path relative to mounted app
+    # When mounted at /mcp, messages will be at /mcp/messages/
+    sse_transport = SseServerTransport("/mcp/messages/")
     mcp_server = UniversalMCPServer(api_router)
 
     async def handle_sse(request):
@@ -44,13 +46,17 @@ def create_mcp_sse_app(api_router: APIRouter) -> Starlette:
                 mcp_server.server.create_initialization_options()
             )
 
-    return Starlette(
+    async def handle_messages(request):
+        return await sse_transport.handle_post_message(
+            request.scope, request.receive, request._send
+        )
+
+    # Create Starlette app with routes
+    app = Starlette(
         routes=[
-            Route("/sse", endpoint=handle_sse, methods=["GET"]),
-            Mount("/messages/", app=sse_transport.handle_post_message),
+            Route("/sse", endpoint=handle_sse),
+            Route("/messages/", endpoint=handle_messages, methods=["POST"]),
         ]
     )
 
-
-# Global MCP SSE app instance (will be initialized in main.py lifespan)
-mcp_sse_app = None
+    return app

@@ -28,8 +28,10 @@ async def lifespan(app: FastAPI):
     # Set global instance
     set_api_router(api_router_instance)
 
-    # Create MCP SSE app
+    # Create MCP SSE app (Starlette app)
     mcp_app = create_mcp_sse_app(api_router_instance)
+
+    # Mount MCP app at /mcp
     app.mount("/mcp", mcp_app)
 
     logger.info(f"Loaded {len(api_router_instance.apis)} APIs")
