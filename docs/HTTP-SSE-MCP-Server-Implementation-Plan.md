@@ -1,10 +1,11 @@
-# HTTP/SSE 전용 MCP 서버 구현 계획서
+# HTTP/SSE MCP 서버 + REST API 구현 계획서
 
 ## 1. 개요
 
 ### 목적
 - 기존 stdio 방식의 MCP 서버를 HTTP/SSE 방식으로 재구현
 - 로컬 및 원격 환경 모두에서 사용 가능한 독립 실행형 MCP 서버 구축
+- **프론트엔드 대시보드 연동을 위한 REST API 제공**
 - stdio 방식의 제약(로컬 전용, 프로세스 관리 복잡도)을 해결
 
 ### 주요 차이점
@@ -23,30 +24,57 @@
 ```
 backend-mcp-sse/
 ├── src/
-│   ├── main.py                    # 애플리케이션 엔트리포인트
+│   ├── main.py                    # 애플리케이션 엔트리포인트 (FastAPI)
 │   ├── config.py                  # 설정 관리
-│   ├── server.py                  # MCP SSE 서버 핵심 로직
-│   ├── handlers.py                # MCP 요청 핸들러
-│   ├── tools.py                   # MCP Tool 변환 로직
-│   ├── api_client.py              # 외부 API 호출 클라이언트
-│   └── models.py                  # 데이터 모델 (Pydantic)
+│   │
+│   ├── mcp/                       # MCP 서버 모듈
+│   │   ├── server.py              # MCP SSE 서버 핵심 로직
+│   │   ├── handlers.py            # MCP 요청 핸들러
+│   │   └── tools.py               # MCP Tool 변환 로직
+│   │
+│   ├── api/                       # REST API 모듈 (프론트엔드용)
+│   │   ├── router.py              # 메인 API 라우터
+│   │   ├── dependencies.py        # 의존성 주입
+│   │   └── endpoints/             # API 엔드포인트
+│   │       ├── health.py          # 헬스 체크
+│   │       ├── apis.py            # API 목록/상세 조회
+│   │       └── proxy.py           # API 호출 프록시
+│   │
+│   ├── core/                      # 핵심 비즈니스 로직
+│   │   ├── api_router.py          # 외부 API 호출 관리
+│   │   └── security.py            # 보안 (URL 검증 등)
+│   │
+│   ├── services/                  # 비즈니스 서비스
+│   │   └── api_service.py         # API 서비스 로직
+│   │
+│   ├── models/                    # 데이터 모델
+│   │   ├── api_definition.py     # API 정의 모델
+│   │   ├── requests.py            # 요청 모델
+│   │   └── responses.py           # 응답 모델
+│   │
+│   └── utils/                     # 유틸리티
+│       └── logger.py              # 로깅 설정
+│
 ├── data/
 │   └── apis/                      # API 정의 JSON 파일 (기존 재사용)
 │       ├── news.json
 │       ├── steam.json
 │       └── weather.json
+│
 ├── requirements.txt               # Python 의존성
 ├── .env.example                   # 환경 변수 예제
 └── README.md                      # 프로젝트 문서
-
 ```
 
 ### 기존 backend 프로젝트와의 관계
 - **API 정의 파일 공유**: `../backend/data/apis/` 디렉토리를 심볼릭 링크 또는 복사
-- **코드 재사용**:
-  - `core/api_router.py` → `api_client.py`로 재구성
-  - `models/api_definition.py` → `models.py`에 포함
-  - MCP 관련 로직은 기존 `mcp_server/` 참고하여 재작성
+- **코드 재사용** (기존 backend 코드를 거의 그대로 복사):
+  - `core/` - API 라우터 및 보안 로직 **복사**
+  - `models/` - 모든 데이터 모델 **복사**
+  - `services/` - API 서비스 로직 **복사**
+  - `api/` - FastAPI 엔드포인트 **복사** (프론트엔드 연동용)
+  - `utils/` - 로깅 유틸리티 **복사**
+  - `mcp/` - MCP 서버 로직만 **재작성** (stdio 제거, SSE만 유지)
 
 ## 3. 기술 스택
 
@@ -56,152 +84,192 @@ backend-mcp-sse/
 mcp==1.1.2                    # MCP SDK
 
 # 웹 프레임워크
-starlette==0.41.3             # 경량 ASGI 프레임워크
+fastapi==0.115.0              # FastAPI (REST API + MCP SSE 호스팅)
+starlette==0.41.3             # ASGI 프레임워크 (FastAPI 내장)
 uvicorn[standard]==0.32.1     # ASGI 서버
 
 # HTTP 클라이언트
 aiohttp==3.10.0               # 비동기 HTTP 클라이언트
-httpx==0.27.0                 # 대안 HTTP 클라이언트
 
 # 데이터 검증
 pydantic==2.9.0               # 데이터 모델
 pydantic-settings==2.5.2      # 설정 관리
 
+# JSONPath
+jsonpath-ng==1.6.1            # JSONPath 쿼리
+
 # 유틸리티
 python-dotenv==1.0.1          # 환경 변수 관리
 ```
 
-### 제외되는 요소
-- FastAPI (불필요 - Starlette만으로 충분)
-- REST API 엔드포인트 (MCP SSE만 제공)
-- 데이터베이스 (상태 비저장)
+### 포함되는 기능
+- ✅ **FastAPI REST API** (프론트엔드 대시보드용)
+  - API 목록 조회 (`GET /api/v1/apis`)
+  - API 상세 정보 (`GET /api/v1/apis/{service_name}`)
+  - API 호출 프록시 (`POST /api/v1/proxy/{service_name}/{endpoint_name}`)
+  - 헬스 체크 (`GET /api/v1/health`)
+- ✅ **MCP SSE 서버** (Claude Desktop용)
+  - SSE 엔드포인트 (`GET /mcp/sse`)
+  - 메시지 엔드포인트 (`POST /mcp/messages`)
+- ✅ **CORS 설정** (프론트엔드 연동)
+- ✅ **API 문서** (Swagger UI: `/docs`)
 
 ## 4. 핵심 구현 사항
 
-### 4.1 MCP SSE 서버 (server.py)
+### 4.1 MCP SSE 서버 (mcp/server.py)
+
+**기존 backend/src/mcp_server/sse_transport.py를 기반으로 작성**
 
 ```python
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from starlette.applications import Starlette
 from starlette.routing import Route, Mount
-from starlette.requests import Request
-from starlette.responses import Response
+
+from mcp.handlers import MCPHandlers
+from core.api_router import APIRouter
 
 class UniversalMCPServer:
-    """HTTP/SSE 전용 MCP 서버"""
+    """HTTP/SSE MCP 서버"""
 
-    def __init__(self):
-        self.mcp_server = Server("universal-api-gateway")
-        self.sse_transport = SseServerTransport("/messages")
+    def __init__(self, api_router: APIRouter):
+        self.server = Server("universal-api-gateway")
+        self.api_router = api_router
+        self.handlers = MCPHandlers(api_router)
+        self._register_handlers()
 
-    async def handle_sse(self, request: Request) -> Response:
-        """SSE 연결 핸들러"""
-        async with self.sse_transport.connect_sse(
-            request.scope,
-            request.receive,
-            request._send
+    def _register_handlers(self):
+        """MCP 핸들러 등록"""
+        @self.server.list_tools()
+        async def list_tools():
+            return await self.handlers.handle_list_tools()
+
+        @self.server.call_tool()
+        async def call_tool(name: str, arguments: dict):
+            return await self.handlers.handle_call_tool(name, arguments)
+
+# Starlette SSE 앱 생성 함수
+def create_mcp_sse_app(api_router: APIRouter) -> Starlette:
+    """MCP SSE 애플리케이션 생성"""
+    sse_transport = SseServerTransport("/messages/")
+    mcp_server = UniversalMCPServer(api_router)
+
+    async def handle_sse(request):
+        async with sse_transport.connect_sse(
+            request.scope, request.receive, request._send
         ) as streams:
-            await self.mcp_server.run(
-                streams[0],
-                streams[1],
-                self.mcp_server.create_initialization_options()
+            await mcp_server.server.run(
+                streams[0], streams[1],
+                mcp_server.server.create_initialization_options()
             )
-        return Response()
 
-    def create_app(self) -> Starlette:
-        """Starlette 애플리케이션 생성"""
-        return Starlette(
-            routes=[
-                Route("/sse", endpoint=self.handle_sse, methods=["GET"]),
-                Mount("/messages", app=self.sse_transport.handle_post_message),
-            ],
-            debug=True
-        )
-```
-
-### 4.2 API 클라이언트 (api_client.py)
-
-기존 `core/api_router.py`를 단순화:
-```python
-import aiohttp
-from typing import Dict, Any, List
-from models import APIDefinition
-
-class APIClient:
-    """외부 API 호출 클라이언트"""
-
-    def __init__(self):
-        self.session: aiohttp.ClientSession = None
-        self.apis: Dict[str, APIDefinition] = {}
-
-    async def load_apis(self, data_dir: str):
-        """API 정의 로드"""
-        # JSON 파일 읽기 및 파싱
-
-    async def call_api(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """API 호출 및 응답 반환"""
-        # HTTP 요청 실행
-        # JSONPath 매핑 적용
-        # 결과 반환
-```
-
-### 4.3 MCP 핸들러 (handlers.py)
-
-기존 `mcp_server/handlers.py`와 유사하지만 독립적:
-```python
-from mcp.types import Tool, TextContent
-from typing import List, Dict, Any
-from api_client import APIClient
-
-class MCPHandlers:
-    """MCP 요청 핸들러"""
-
-    def __init__(self, api_client: APIClient):
-        self.api_client = api_client
-
-    async def list_tools(self) -> List[Tool]:
-        """도구 목록 반환"""
-
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> List[TextContent]:
-        """도구 호출"""
-```
-
-### 4.4 메인 애플리케이션 (main.py)
-
-```python
-import uvicorn
-from server import UniversalMCPServer
-from config import settings
-
-async def startup():
-    """서버 시작 시 초기화"""
-    # API 정의 로드
-    # 세션 생성
-
-async def shutdown():
-    """서버 종료 시 정리"""
-    # 세션 종료
-
-def main():
-    server = UniversalMCPServer()
-    app = server.create_app()
-
-    # 이벤트 핸들러 등록
-    app.add_event_handler("startup", startup)
-    app.add_event_handler("shutdown", shutdown)
-
-    # Uvicorn 서버 실행
-    uvicorn.run(
-        app,
-        host=settings.HOST,
-        port=settings.PORT,
-        log_level=settings.LOG_LEVEL
+    return Starlette(
+        routes=[
+            Route("/sse", endpoint=handle_sse, methods=["GET"]),
+            Mount("/messages/", app=sse_transport.handle_post_message),
+        ]
     )
+```
+
+### 4.2 메인 애플리케이션 (main.py)
+
+**기존 backend/src/main.py를 기반으로 작성 (FastAPI 유지)**
+
+```python
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from config import settings
+from core.api_router import APIRouter
+from api.dependencies import set_api_router
+from api.router import api_router
+from mcp.server import create_mcp_sse_app
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """애플리케이션 생명주기 관리"""
+    # 시작 시: API 정의 로드 및 세션 생성
+    api_router_instance = APIRouter(data_dir=settings.DATA_DIR)
+    await api_router_instance.load_api_definitions()
+    await api_router_instance.create_session()
+    set_api_router(api_router_instance)
+
+    # MCP SSE 앱 생성 및 마운트
+    mcp_sse_app = create_mcp_sse_app(api_router_instance)
+    app.mount("/mcp", mcp_sse_app)
+
+    yield
+
+    # 종료 시: 세션 종료
+    await api_router_instance.close_session()
+
+# FastAPI 앱 생성
+app = FastAPI(
+    title="Universal API Gateway",
+    description="HTTP/SSE MCP Server + REST API",
+    version="2.0.0",
+    lifespan=lifespan
+)
+
+# CORS 설정 (프론트엔드 연동)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+"
+)
+
+# REST API 라우터 등록 (프론트엔드용)
+app.include_router(api_router, prefix="/api/v1")
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Universal API Gateway (HTTP/SSE)",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "mcp_sse": "/mcp/sse"
+    }
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
 ```
+
+### 4.3 복사할 파일 목록
+
+**기존 backend/src에서 거의 그대로 복사:**
+
+1. **core/** (전체 복사)
+   - `api_router.py` - API 호출 관리
+   - `config.py` - 설정
+   - `security.py` - 보안
+
+2. **models/** (전체 복사)
+   - `api_definition.py`
+   - `requests.py`
+   - `responses.py`
+
+3. **services/** (전체 복사)
+   - `api_service.py`
+
+4. **api/** (전체 복사)
+   - `router.py`
+   - `dependencies.py`
+   - `endpoints/health.py`
+   - `endpoints/apis.py`
+   - `endpoints/proxy.py`
+
+5. **utils/** (전체 복사)
+   - `logger.py`
+
+6. **mcp/** (재작성)
+   - `server.py` - SSE 전용 (stdio 제거)
+   - `handlers.py` - MCP 핸들러 (기존과 동일)
+   - `tools.py` - Tool 변환 (기존과 동일)
 
 ## 5. 환경 설정
 
@@ -304,34 +372,49 @@ curl -N http://localhost:8080/sse
 
 ## 9. 구현 단계
 
-### Phase 1: 프로젝트 기본 구조 생성 ✅
+### Phase 1: 프로젝트 기본 구조 생성
 - [ ] `backend-mcp-sse/` 디렉토리 생성
-- [ ] 기본 파일 구조 생성
+- [ ] 하위 디렉토리 생성 (`src/`, `src/mcp/`, `src/api/`, `src/core/`, 등)
 - [ ] `requirements.txt` 작성
 - [ ] `.env.example` 작성
 
-### Phase 2: 핵심 모듈 구현 ✅
-- [ ] `models.py` - 데이터 모델 정의
-- [ ] `config.py` - 설정 관리
-- [ ] `api_client.py` - API 클라이언트 구현
-- [ ] `handlers.py` - MCP 핸들러 구현
-- [ ] `tools.py` - Tool 변환 로직
+### Phase 2: 기존 코드 복사
+- [ ] `backend/src/core/` → `backend-mcp-sse/src/core/` 복사
+- [ ] `backend/src/models/` → `backend-mcp-sse/src/models/` 복사
+- [ ] `backend/src/services/` → `backend-mcp-sse/src/services/` 복사
+- [ ] `backend/src/api/` → `backend-mcp-sse/src/api/` 복사
+- [ ] `backend/src/utils/` → `backend-mcp-sse/src/utils/` 복사
+- [ ] `backend/data/apis/` → `backend-mcp-sse/data/apis/` 복사
 
-### Phase 3: MCP SSE 서버 구현 ✅
-- [ ] `server.py` - SSE 서버 핵심 로직
-- [ ] `main.py` - 애플리케이션 엔트리포인트
-- [ ] 로깅 설정
+### Phase 3: MCP 모듈 재작성
+- [ ] `src/mcp/server.py` - SSE 전용으로 재작성
+- [ ] `src/mcp/handlers.py` - 기존 복사 후 import 경로 수정
+- [ ] `src/mcp/tools.py` - 기존 복사 후 import 경로 수정
+- [ ] `src/mcp/__init__.py` - 생성
 
-### Phase 4: 테스트 및 검증 ✅
-- [ ] 로컬 환경에서 서버 실행 테스트
-- [ ] MCP Inspector로 연결 테스트
+### Phase 4: main.py 수정
+- [ ] `src/main.py` - FastAPI + MCP SSE 통합
+- [ ] MCP SSE 앱 마운트 로직 추가
+- [ ] 기존 REST API 라우터 유지
+- [ ] CORS 설정 유지
+
+### Phase 5: config.py 수정
+- [ ] 포트 변경 (8000 → 8080)
+- [ ] MCP SSE 엔드포인트 설정
+
+### Phase 6: 테스트 및 검증
+- [ ] 로컬 환경에서 서버 실행 (`python src/main.py`)
+- [ ] FastAPI 문서 확인 (`http://localhost:8080/docs`)
+- [ ] MCP Inspector로 SSE 연결 테스트 (`http://localhost:8080/mcp/sse`)
 - [ ] Claude Desktop 연결 테스트
+- [ ] 프론트엔드 연결 테스트 (`http://localhost:5173`)
 - [ ] 5개 API 도구 동작 검증
 
-### Phase 5: 문서화 및 배포 준비 ✅
+### Phase 7: 문서화
 - [ ] README.md 작성
-- [ ] Docker 지원 (선택사항)
-- [ ] 배포 가이드 작성
+- [ ] 실행 방법 문서화
+- [ ] Claude Desktop 설정 가이드
+- [ ] 프론트엔드 연동 가이드
 
 ## 10. 기존 코드 재사용 전략
 
