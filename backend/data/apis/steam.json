@@ -9,7 +9,7 @@
       "id": "get_popular_games",
       "name": "steam_get_popular_games",
       "display_name": "Get Popular Games",
-      "description": "현재 가장 많이 플레이되는 Steam 게임 목록을 조회합니다",
+      "description": "Get a list of the most played Steam games currently",
       "http_method": "GET",
       "path": "/ISteamChartsService/GetMostPlayedGames/v1/",
       "parameters": {

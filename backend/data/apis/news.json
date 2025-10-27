@@ -9,7 +9,7 @@
       "id": "get_top_headlines",
       "name": "news_get_top_headlines",
       "display_name": "Get Top Headlines",
-      "description": "최신 헤드라인 뉴스를 조회합니다. 국가 코드로 필터링 가능합니다.",
+      "description": "Get the latest top headlines. Filter by country code.",
       "http_method": "GET",
       "path": "/v2/top-headlines",
       "parameters": {
@@ -52,7 +52,7 @@
       "id": "search_everything",
       "name": "news_search_everything",
       "display_name": "Search Everything",
-      "description": "키워드로 모든 뉴스 기사를 검색합니다",
+      "description": "Search all news articles by keyword",
       "http_method": "GET",
       "path": "/v2/everything",
       "parameters": {

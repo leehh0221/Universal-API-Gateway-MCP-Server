@@ -9,7 +9,7 @@
       "id": "get_current_weather",
       "name": "weather_get_current",
       "display_name": "Get Current Weather",
-      "description": "특정 위치의 현재 날씨 정보를 조회합니다. 위도와 경도가 필요합니다.",
+      "description": "Get current weather information for a specific location. Requires latitude and longitude.",
       "http_method": "GET",
       "path": "/v1/forecast",
       "parameters": {
@@ -51,7 +51,7 @@
       "id": "get_forecast",
       "name": "weather_get_forecast",
       "display_name": "Get Weather Forecast",
-      "description": "특정 위치의 일기 예보를 조회합니다 (7일간)",
+      "description": "Get weather forecast for a specific location (7 days)",
       "http_method": "GET",
       "path": "/v1/forecast",
       "parameters": {

@@ -2,7 +2,7 @@
 MCP SSE 전송 계층
 """
 from starlette.applications import Starlette
-from starlette.routing import Route
+from starlette.routing import Route, Mount
 from starlette.requests import Request
 from starlette.responses import Response
 from mcp.server.sse import SseServerTransport
@@ -42,17 +42,12 @@ async def handle_sse(request: Request) -> Response:
     return Response()
 
 
-async def handle_post_message(request: Request) -> Response:
-    """POST 메시지 핸들러"""
-    return await sse_transport.handle_post_message(request)
-
-
 # Starlette 라우트 정의
 sse_routes = [
     Route("/sse", endpoint=handle_sse, methods=["GET"]),
-    Route("/messages/{message_id}", endpoint=handle_post_message, methods=["POST"]),
+    Mount("/messages/", app=sse_transport.handle_post_message),
 ]
 
 
 # MCP SSE 앱 생성
-mcp_sse_app = Starlette(routes=sse_routes)
+mcp_sse_app = Starlette(routes=sse_routes, debug=True)

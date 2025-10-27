@@ -30,8 +30,8 @@ def setup_logger(
 
     logger.setLevel(level)
 
-    # 콘솔 핸들러 생성
-    console_handler = logging.StreamHandler(sys.stdout)
+    # 콘솔 핸들러 생성 (stdio 모드에서는 stderr 사용)
+    console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(level)
 
     # 포맷터 설정
