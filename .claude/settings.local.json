@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx -y @modelcontextprotocol/inspector)",
+      "WebFetch(domain:www.notion.so)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
