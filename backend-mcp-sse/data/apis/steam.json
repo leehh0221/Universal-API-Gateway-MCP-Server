@@ -1,0 +1,32 @@
+{
+  "service_name": "steam",
+  "display_name": "Steam Web API",
+  "base_url": "https://api.steampowered.com",
+  "description": "Steam 게임 정보 및 플레이어 통계를 조회합니다",
+  "auth_required": false,
+  "endpoints": [
+    {
+      "id": "get_popular_games",
+      "name": "steam_get_popular_games",
+      "display_name": "Get Popular Games",
+      "description": "Get a list of the most played Steam games currently",
+      "http_method": "GET",
+      "path": "/ISteamChartsService/GetMostPlayedGames/v1/",
+      "parameters": {
+        "count": {
+          "type": "integer",
+          "description": "반환할 게임 개수 (1-100)",
+          "required": false,
+          "default": 10,
+          "min": 1,
+          "max": 100
+        }
+      },
+      "response_mapping": {
+        "path": "$.response.ranks",
+        "format": "json"
+      },
+      "timeout_seconds": 10
+    }
+  ]
+}
