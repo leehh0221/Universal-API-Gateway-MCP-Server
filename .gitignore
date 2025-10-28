@@ -1,0 +1,124 @@
+# ===========================
+# IDE & Editor
+# ===========================
+# Claude
+.claude/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# ===========================
+# OS Files
+# ===========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ===========================
+# Environment & Secrets
+# ===========================
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# API Keys & Secrets
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+config/secrets.yaml
+config/secrets.json
+
+# ===========================
+# Logs & Temporary Files
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ===========================
+# Build Artifacts
+# ===========================
+dist/
+build/
+out/
+*.egg-info/
+.eggs/
+target/
+
+# ===========================
+# Coverage & Test Reports
+# ===========================
+coverage/
+*.cover
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.nyc_output/
+junit.xml
+test-results/
+
+# ===========================
+# Package Manager
+# ===========================
+# npm
+node_modules/
+package-lock.json
+
+# yarn
+.yarn/
+.pnp.*
+yarn.lock
+
+# pnpm
+pnpm-lock.yaml
+
+# ===========================
+# Database & Cache
+# ===========================
+*.db
+*.sqlite
+*.sqlite3
+*.rdb
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# ===========================
+# Documentation
+# ===========================
+# Skip auto-generated docs if needed
+# docs/_build/
+# site/
