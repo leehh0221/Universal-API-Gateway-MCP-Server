@@ -1,0 +1,19 @@
+# MCP Protocol
+mcp==1.1.2
+
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.1
+
+# HTTP Client
+aiohttp==3.10.0
+
+# Data Validation
+pydantic==2.9.0
+pydantic-settings==2.5.2
+
+# JSONPath
+jsonpath-ng==1.6.1
+
+# Utilities
+python-dotenv==1.0.1
